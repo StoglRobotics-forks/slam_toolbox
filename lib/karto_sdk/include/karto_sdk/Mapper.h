@@ -2091,17 +2091,33 @@ public:
     return m_LocalizationScanVertices;
   }
 
-protected:
-  void InitializeParameters();
+  /**
+   * Test if the enough time has passed since the last processed scan.
+   * @param scanTime scan to be checked
+   * @param lastScanTime last scan added to mapper
+   * @return true if the minimum alloted time has passed
+   */
+  kt_bool EnoughTimeHasPassed(const kt_double& scanTime, const kt_double& lastScanTime) const;
 
   /**
    * Test if the scan is "sufficiently far" from the last scan added.
+   * @param scannerPose scanner pose to be checked
+   * @param lastScannerPose pose of the last scan added to mapper
+   * @return true if the scan is "sufficiently far" from the last scan added
+   */
+  kt_bool HasMovedEnough(const Pose2& scannerPose, const Pose2& lastScannerPose) const;
+
+  /**
+   * See if we should continue processing this scan.
    * @param pScan scan to be checked
    * @param pLastScan last scan added to mapper
-   * @return true if the scan is "sufficiently far" from the last scan added or
-   * the scan is the first scan to be added
+   * @return true if it is the first scan, if enough time has passed since the last one or 
+   * the scan pose has moved enough.
    */
-  kt_bool HasMovedEnough(LocalizedRangeScan * pScan, LocalizedRangeScan * pLastScan) const;
+  kt_bool ContinueProcessingScan(LocalizedRangeScan * pScan, LocalizedRangeScan * pLastScan) const;
+
+protected:
+  void InitializeParameters();
 
 public:
   /////////////////////////////////////////////

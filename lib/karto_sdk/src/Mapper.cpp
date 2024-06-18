@@ -2700,8 +2700,7 @@ kt_bool Mapper::Process(LocalizedRangeScan * pScan, Matrix3 * covariance)
       pScan->SetCorrectedPose(lastTransform.TransformPose(pScan->GetOdometricPose()));
     }
 
-    // test if scan is outside minimum boundary or if heading is larger then minimum heading
-    if (!HasMovedEnough(pScan, pLastScan)) {
+    if(!ContinueProcessingScan(pScan, pLastScan)){
       return false;
     }
 
@@ -2860,9 +2859,7 @@ kt_bool Mapper::ProcessLocalization(LocalizedRangeScan * pScan, Matrix3 * covari
         pScan->GetOdometricPose()));
   }
 
-  // test if scan is outside minimum boundary
-  // or if heading is larger then minimum heading
-  if (!HasMovedEnough(pScan, pLastScan)) {
+  if(!ContinueProcessingScan(pScan, pLastScan)){
     return false;
   }
 
@@ -3102,27 +3099,47 @@ kt_bool Mapper::ProcessAtDock(LocalizedRangeScan * pScan, Matrix3 * covariance)
 }
 
 /**
- * Is the scan sufficiently far from the last scan?
- * @param pScan
- * @param pLastScan
- * @return true if the scans are sufficiently far
- */
-kt_bool Mapper::HasMovedEnough(LocalizedRangeScan * pScan, LocalizedRangeScan * pLastScan) const
+* See if we should continue processing this scan.
+* @param pScan scan to be checked
+* @param pLastScan last scan added to mapper
+* @return true if it is the first scan, if enough time has passed since the last one or 
+* the scan pose has moved enough.
+*/
+kt_bool Mapper::ContinueProcessingScan(LocalizedRangeScan * pScan, LocalizedRangeScan * pLastScan) const
 {
-  // test if first scan
-  if (pLastScan == NULL) {
-    return true;
-  }
-
+  if(pLastScan == NULL) return true;
+  if(
+    EnoughTimeHasPassed(pScan->GetTime(), pLastScan->GetTime()) ||
+    HasMovedEnough(pScan->GetOdometricPose(), pLastScan->GetOdometricPose())
+    ){
+      return true;
+    }
+  return false;
+}
+/**
+* Test if the enough time has passed since the last processed scan.
+* @param pScan scan to be checked
+* @param pLastScan last scan added to mapper
+* @return true if the minimum alloted time has passed
+*/
+kt_bool Mapper::EnoughTimeHasPassed(const kt_double& scanTime, const kt_double& lastScanTime) const
+{
   // test if enough time has passed
-  kt_double timeInterval = pScan->GetTime() - pLastScan->GetTime();
+  kt_double timeInterval = scanTime - lastScanTime;
   if (timeInterval >= m_pMinimumTimeInterval->GetValue()) {
     return true;
   }
+  return false;
+}
 
-  Pose2 lastScannerPose = pLastScan->GetSensorAt(pLastScan->GetOdometricPose());
-  Pose2 scannerPose = pScan->GetSensorAt(pScan->GetOdometricPose());
-
+/**
+* Test if the scan is "sufficiently far" from the last scan added.
+* @param scannerPose scanner pose to be checked
+* @param lastScannerPose pose of the last scan added to mapper
+* @return true if the scan is "sufficiently far" from the last scan added
+*/
+kt_bool Mapper::HasMovedEnough(const Pose2& scannerPose, const Pose2& lastScannerPose) const
+{
   // test if we have turned enough
   kt_double deltaHeading = math::NormalizeAngle(
     scannerPose.GetHeading() - lastScannerPose.GetHeading());
@@ -3139,6 +3156,7 @@ kt_bool Mapper::HasMovedEnough(LocalizedRangeScan * pScan, LocalizedRangeScan * 
 
   return false;
 }
+
 
 /**
  * Gets all the processed scans
