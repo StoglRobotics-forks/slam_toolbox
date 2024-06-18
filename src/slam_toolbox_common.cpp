@@ -20,6 +20,7 @@
 #include <vector>
 #include <string>
 #include <chrono>
+#include <math.h>
 #include "slam_toolbox/slam_toolbox_common.hpp"
 #include "slam_toolbox/serialization.hpp"
 
@@ -506,9 +507,11 @@ bool SlamToolbox::shouldProcessScan(
 {
   static Pose2 last_pose;
   static rclcpp::Time last_scan_time = rclcpp::Time(0.);
-  static double min_dist2 =
-    smapper_->getMapper()->getParamMinimumTravelDistance() *
-    smapper_->getMapper()->getParamMinimumTravelDistance();
+  static double min_dist = smapper_->getMapper()->getParamMinimumTravelDistance();
+  static double min_angle =
+    smapper_->getMapper()->getParamMinimumTravelHeading() /*IN DEGREES! needs conversion to rad: */ * M_PI/180;
+
+  //double min_angle = 0.05;
   static int scan_ctr = 0;
   scan_ctr++;
 
@@ -535,11 +538,19 @@ bool SlamToolbox::shouldProcessScan(
     return false;
   }
 
-  // check moved enough, within 10% for correction error
-  const double dist2 = last_pose.SquaredDistance(pose);
-  if (dist2 < 0.8 * min_dist2 || scan_ctr < 5) {
+  const double deltaHeading = math::NormalizeAngle(
+    pose.GetHeading() - last_pose.GetHeading());
+  const double squaredTravelDistance = last_pose.GetPosition().SquaredDistance(
+    pose.GetPosition());
+  // return only if we both havent turned enough or havent moved enough
+  if (squaredTravelDistance <= math::Square(min_dist) - KT_TOLERANCE &&
+      fabs(deltaHeading) <= min_angle) {
     return false;
   }
+
+  std::cout << "---" << scan_ctr << "---" << std::endl;
+  std::cout << "deltaHeading:         " << deltaHeading << std::endl;
+  std::cout << "squaredTravelDistance:" << squaredTravelDistance << std::endl;
 
   last_pose = pose;
   last_scan_time = scan->header.stamp;
