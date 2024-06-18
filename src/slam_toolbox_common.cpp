@@ -41,8 +41,7 @@ SlamToolbox::SlamToolbox(rclcpp::NodeOptions options)
   processor_type_(PROCESS),
   first_measurement_(true),
   process_near_pose_(nullptr),
-  transform_timeout_(rclcpp::Duration::from_seconds(0.5)),
-  minimum_time_interval_(std::chrono::nanoseconds(0))
+  transform_timeout_(rclcpp::Duration::from_seconds(0.5))
 /*****************************************************************************/
 {
   smapper_ = std::make_unique<mapper_utils::SMapper>();
@@ -177,8 +176,6 @@ void SlamToolbox::setParams()
   double tmp_val = 0.5;
   tmp_val = this->declare_parameter("transform_timeout", tmp_val);
   transform_timeout_ = rclcpp::Duration::from_seconds(tmp_val);
-  tmp_val = this->declare_parameter("minimum_time_interval", tmp_val);
-  minimum_time_interval_ = rclcpp::Duration::from_seconds(tmp_val);
 
   bool debug = false;
   debug = this->declare_parameter("debug_logging", debug);

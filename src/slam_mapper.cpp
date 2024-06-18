@@ -110,6 +110,13 @@ void SMapper::configure(const rclcpp::Node::SharedPtr & node)
   node->get_parameter("use_scan_barycenter", use_scan_barycenter);
   mapper_->setParamUseScanBarycenter(use_scan_barycenter);
 
+  double minimum_time_interval = 3600;
+  if (!node->has_parameter("minimum_time_interval")) {
+    node->declare_parameter("minimum_time_interval", minimum_time_interval);
+  }
+  node->get_parameter("minimum_time_interval", minimum_time_interval);
+  mapper_->setParamMinimumTimeInterval(minimum_time_interval);
+
   double minimum_travel_distance = 0.5;
   if (!node->has_parameter("minimum_travel_distance")) {
     node->declare_parameter("minimum_travel_distance", minimum_travel_distance);
